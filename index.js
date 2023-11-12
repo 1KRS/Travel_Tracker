@@ -20,6 +20,7 @@ db.connect();
 
 // Αρχικές Τιμές (Initial Values)
 let τρέχωνΧρήστης = 1;
+let χρώμαΧρήστη = 'teal'
 let χρήστες = [];
 let χώρες = [];
 let ταξίδια = [];
@@ -39,7 +40,6 @@ const φιλτράρισμαΤαξιδιώνΧρήστη = (τΧρήστη) => {
   const ΦιλτραρισμένεςΧώρες = ταξίδια.rows.filter(
     (index) => index.user_id == τΧρήστη
   );
-  // console.log('Ταξίδια σε χώρες:', ΦιλτραρισμένεςΧώρες);
   return ΦιλτραρισμένεςΧώρες;
 };
 
@@ -50,16 +50,12 @@ const μετατροπήΤαξιδιώνΣεΚωδικούςΧωρών = (τΧρ
       return χώρες[δΧώρας].country_code;
     }
   );
-  // console.log('Ταξίδια με κωδικούς χωρών', ΦιλτραρισμένεςΧώρες);
   return ΦιλτραρισμένεςΧώρες;
 };
 
 const μετατροπήΚωδικώνΣεΤαυτότητεςΧωρών = (κΧώρας) => {
-  console.log('Κωδικός Νέας Χώρας', κΧώρας);
   const δΧώρας = χώρες.findIndex(country => country.country_code === κΧώρας)
-  console.log('Δείκτης Νέας Χώρας', δΧώρας);
   const τΧώρας = χώρες[δΧώρας].id
-  console.log('Ταυτότητα Νέας Χώρας', τΧώρας);
   return τΧώρας;
 };
 
@@ -69,7 +65,6 @@ const λήψηΧρηστών = async (req, res, next) => {
   const δεδομένα = await db.query(`SELECT * FROM users`);
   χρήστες = δεδομένα.rows;
   αριθμόςΧρηστών = χρήστες.length;
-  // console.log('Χρήστες', αριθμόςΧρηστών, χρήστες)
   next();
 };
 
@@ -78,7 +73,6 @@ const λήψηΧωρών = async (req, res, next) => {
   χώρες = δεδομένα.rows;
   αριθμόςΧωρών = χώρες.length;
 
-  // console.log('Χώρες', χώρες, αριθμόςΧωρών)
   next();
 };
 
@@ -86,7 +80,6 @@ const λήψηΕπισκεφθέντωνΧωρών = async (req, res, next) => {
   ταξίδια = await db.query(`SELECT * FROM visited_countries`);
   επισκεφθείσεςΧώρεςΧρήστη = μετατροπήΤαξιδιώνΣεΚωδικούςΧωρών(τρέχωνΧρήστης);
   αριθμόςΕπισκεφθέντωνΧωρών = επισκεφθείσεςΧώρεςΧρήστη.length;
-  // console.log('Επισκεφθείσες Χώρες', αριθμόςΕπισκεφθέντωνΧωρών, επισκεφθείσεςΧώρεςΧρήστη)
   next();
 };
 
@@ -99,17 +92,11 @@ const λήψηΕπισκεφθέντωνΧωρών = async (req, res, next) => {
 
 // GET
 διακ.get('/', async (req, res) => {
-  // console.log(
-  //   `Επισκεφθείσες Χώρες ${χρήστες[τρέχωνΧρήστης - 1].name}:`,
-  //   αριθμόςΕπισκεφθέντωνΧωρών,
-  //   επισκεφθείσεςΧώρεςΧρήστη
-  //   // χρήστες
-  // );
   res.render('index.ejs', {
     total: αριθμόςΕπισκεφθέντωνΧωρών,
     countries: επισκεφθείσεςΧώρεςΧρήστη,
     users: χρήστες,
-    color: 'teal',
+    color: χρώμαΧρήστη
   });
 });
 
@@ -136,7 +123,6 @@ const λήψηΕπισκεφθέντωνΧωρών = async (req, res, next) => {
         [`${νέαΧώρα.toLowerCase()}`]
       );
       κωδικόςΧώρας = αποτέλεσμα.rows[0].country_code;
-      console.log('Έφτασα', κωδικόςΧώρας)
       ταυτότηταΧώρας = μετατροπήΚωδικώνΣεΤαυτότητεςΧωρών(κωδικόςΧώρας)
     }
 
@@ -171,22 +157,32 @@ const λήψηΕπισκεφθέντωνΧωρών = async (req, res, next) => {
 });
 
 διακ.post('/user', async (req, res) => {
-  req.body.new ? res.redirect('/new') : console.log('Χρήστης', req.body.user);
+  if (req.body.add) {
+    res.render('new.ejs')
+  }
   if (req.body.user) {
     τρέχωνΧρήστης = req.body.user
+    χρώμαΧρήστη = χρήστες.find(χ => χ.id == τρέχωνΧρήστης).color
   }
-  console.log('Τρέχων Χρήστης', τρέχωνΧρήστης);
 
   επισκεφθείσεςΧώρεςΧρήστη = await μετατροπήΤαξιδιώνΣεΚωδικούςΧωρών(τρέχωνΧρήστης);
   res.render('index.ejs', {
     total: επισκεφθείσεςΧώρεςΧρήστη.length,
     countries: επισκεφθείσεςΧώρεςΧρήστη,
     users: χρήστες,
-    color: 'teal',
+    color: χρώμαΧρήστη,
   });
 });
 
 διακ.post('/new', async (req, res) => {
+  const νέοςΧρήστης = req.body.name
+  const χρώμαΧρήστη = req.body.color
+
+  await db.query(
+    'INSERT INTO users (name, color) VALUES ($1, $2)',
+    [`${νέοςΧρήστης}`, `${χρώμαΧρήστη}`]
+  );
+  res.redirect('/');
   //Hint: The RETURNING keyword can return the data that was inserted.
   //https://www.postgresql.org/docs/current/dml-returning.html
 });
